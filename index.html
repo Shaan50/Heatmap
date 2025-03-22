@@ -8,9 +8,20 @@
         body { font-family: Arial, sans-serif; text-align: center; }
         .grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; width: 90vw; margin: auto; }
         .cell { 
-            width: 40px; height: 40px; text-align: center; 
-            line-height: 40px; border: 1px solid #ccc; cursor: pointer;
-            font-weight: bold; transition: background 0.3s;
+            width: 50px; height: 50px; text-align: center; 
+            position: relative; border: 1px solid #ccc; cursor: pointer;
+            font-weight: bold; transition: background 0.3s, color 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .count {
+            position: absolute;
+            top: 3px; right: 3px;
+            font-size: 14px;
+            font-weight: bold;
+            color: black;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 2px 5px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -45,24 +56,43 @@
                 const cell = document.createElement("div");
                 cell.className = "cell";
                 cell.textContent = hand;
+
+                // Create count display
+                const countDisplay = document.createElement("div");
+                countDisplay.className = "count";
+                countDisplay.textContent = handCounts[hand] || "0";
+                cell.appendChild(countDisplay);
+
+                // Set initial color
                 cell.style.background = getColor(handCounts[hand] || 0);
-                cell.onclick = () => trackHand(hand, cell);
+
+                cell.onclick = () => trackHand(hand, cell, countDisplay);
                 grid.appendChild(cell);
             });
         }
 
-        function trackHand(hand, cell) {
+        function trackHand(hand, cell, countDisplay) {
             handCounts[hand] = (handCounts[hand] || 0) + 1;
             localStorage.setItem("handCounts", JSON.stringify(handCounts));
+
+            // Update count
+            countDisplay.textContent = handCounts[hand];
+
+            // Update color dynamically
             cell.style.background = getColor(handCounts[hand]);
         }
 
         function getColor(count) {
-            if (count === 0) return "#ffffff"; // White (not seen)
-            if (count === 1) return "#b3e5fc"; // Light blue (1 time)
-            if (count === 2) return "#4fc3f7"; // Medium blue (2 times)
-            if (count === 3) return "#0288d1"; // Darker blue (3 times)
-            return "#01579b"; // Deep blue (4+ times)
+            const minColor = [255, 230, 230]; // Light pink (RGB)
+            const maxColor = [255, 0, 0];     // Deep red (RGB)
+            const maxCount = 10; // Adjustable scale for intensity
+
+            let factor = Math.min(count / maxCount, 1); // Keep between 0 and 1
+            let r = Math.round(minColor[0] + factor * (maxColor[0] - minColor[0]));
+            let g = Math.round(minColor[1] + factor * (maxColor[1] - minColor[1]));
+            let b = Math.round(minColor[2] + factor * (maxColor[2] - minColor[2]));
+
+            return `rgb(${r}, ${g}, ${b})`;
         }
 
         function resetChart() {
