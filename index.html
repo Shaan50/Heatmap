@@ -23,12 +23,21 @@
             padding: 2px 5px;
             border-radius: 5px;
         }
+        #datePicker {
+            margin: 10px 0;
+            padding: 5px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
     <h2>Poker Range Tracker</h2>
+
+    <label for="datePicker">Select Session Date:</label>
+    <input type="date" id="datePicker">
+
     <div class="grid" id="pokerGrid"></div>
-    <button onclick="resetChart()">Reset</button>
+    <button onclick="resetChart()">Reset Current Date</button>
 
     <script>
         const hands = [
@@ -48,10 +57,27 @@
         ];
 
         const grid = document.getElementById("pokerGrid");
-        const handCounts = JSON.parse(localStorage.getItem("handCounts")) || {};
+        const datePicker = document.getElementById("datePicker");
+        let currentDate = getTodayDate();
+
+        datePicker.value = currentDate;
+        datePicker.addEventListener("change", () => {
+            currentDate = datePicker.value;
+            createGrid();
+        });
+
+        function getTodayDate() {
+            return new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        }
+
+        function getStorageKey() {
+            return `handCounts_${currentDate}`;
+        }
 
         function createGrid() {
             grid.innerHTML = "";
+            const handCounts = JSON.parse(localStorage.getItem(getStorageKey())) || {};
+
             hands.forEach(hand => {
                 const cell = document.createElement("div");
                 cell.className = "cell";
@@ -72,22 +98,20 @@
         }
 
         function trackHand(hand, cell, countDisplay) {
+            const handCounts = JSON.parse(localStorage.getItem(getStorageKey())) || {};
             handCounts[hand] = (handCounts[hand] || 0) + 1;
-            localStorage.setItem("handCounts", JSON.stringify(handCounts));
+            localStorage.setItem(getStorageKey(), JSON.stringify(handCounts));
 
-            // Update count
             countDisplay.textContent = handCounts[hand];
-
-            // Update color dynamically
             cell.style.background = getColor(handCounts[hand]);
         }
 
         function getColor(count) {
-            const minColor = [255, 230, 230]; // Light pink (RGB)
-            const maxColor = [255, 0, 0];     // Deep red (RGB)
-            const maxCount = 10; // Adjustable scale for intensity
+            const minColor = [255, 230, 230]; // Light pink
+            const maxColor = [255, 0, 0];     // Deep red
+            const maxCount = 10;
 
-            let factor = Math.min(count / maxCount, 1); // Keep between 0 and 1
+            let factor = Math.min(count / maxCount, 1);
             let r = Math.round(minColor[0] + factor * (maxColor[0] - minColor[0]));
             let g = Math.round(minColor[1] + factor * (maxColor[1] - minColor[1]));
             let b = Math.round(minColor[2] + factor * (maxColor[2] - minColor[2]));
@@ -96,8 +120,7 @@
         }
 
         function resetChart() {
-            localStorage.removeItem("handCounts");
-            Object.keys(handCounts).forEach(key => delete handCounts[key]);
+            localStorage.removeItem(getStorageKey());
             createGrid();
         }
 
